@@ -1,3 +1,6 @@
 [submodule "api"]
 	path = api
 	url = git@github.com:svenvarkel/players-api.git
+[submodule "web"]
+	path = web
+	url = git@github.com:svenvarkel/players-web.git

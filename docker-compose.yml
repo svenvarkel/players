@@ -11,11 +11,8 @@ services:
         source: rabbitmq
         target: /var/lib/rabbitmq/mnesia
     ports:
-      - "5671:5671"
       - "5672:5672"
-      - "15671:15671"
       - "15672:15672"
-      - "25672:25672"
     networks:
       - local
   redis:
@@ -48,7 +45,7 @@ services:
       - local
   api:
     build: ./api
-    image: designbot-api:latest
+    image: players-api:latest
     ports:
       - 1337:1337
       - 9337:9337
@@ -57,16 +54,11 @@ services:
       DEBUG_PORT: 9337
       WAIT_HOSTS: rabbitmq:5672,mongodb:27017,redis:6379
       NODE_ENV: development
+      MONGODB_URL: mongodb://dev:dev@mongodb:27017/players?authSource=admin
     volumes:
       - type: bind
-        source: ./api/api
-        target: /var/app/current/api
-      - type: bind
-        source: ./api/config
-        target: /var/app/current/config
-      - type: bind
-        source: ./api/test
-        target: /var/app/current/test
+        source: ./api
+        target: /var/app/current
     networks:
       - local
     depends_on:
@@ -75,11 +67,11 @@ services:
       - "redis"
   web:
     build: ./web
-    image: designbot-web:latest
+    image: players-web:latest
     ports:
       - 3000:3000
     environment:
-      REACT_APP_API_URL: http://api.designbot.local
+      REACT_APP_API_URL: http://api.players.local
     volumes:
       - type: bind
         source: ./web/src

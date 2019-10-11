@@ -56,9 +56,7 @@ services:
       PORT: 1337
       DEBUG_PORT: 9337
       WAIT_HOSTS: rabbitmq:5672,mongodb:27017,redis:6379
-    env_file:
-      - ./api/.env
-      - ~/.aws/env_designbot.sh
+      NODE_ENV: development
     volumes:
       - type: bind
         source: ./api/api

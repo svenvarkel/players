@@ -57,8 +57,11 @@ services:
       MONGODB_URL: mongodb://dev:dev@mongodb:27017/players?authSource=admin
     volumes:
       - type: bind
-        source: ./api
-        target: /var/app/current
+        source: ./api/api
+        target: /var/app/current/api
+      - type: bind
+        source: ./api/config
+        target: /var/app/current/config
     networks:
       - local
     depends_on:

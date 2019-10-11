@@ -1,0 +1,123 @@
+version: "3.7"
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_VHOST: "/players"
+      RABBITMQ_DEFAULT_USER: "dev"
+      RABBITMQ_DEFAULT_PASS: "dev"
+    volumes:
+      - type: volume
+        source: rabbitmq
+        target: /var/lib/rabbitmq/mnesia
+    ports:
+      - "5671:5671"
+      - "5672:5672"
+      - "15671:15671"
+      - "15672:15672"
+      - "25672:25672"
+    networks:
+      - local
+  redis:
+    image: redis:5.0.5
+    volumes:
+      - type: volume
+        source: redis
+        target: /data
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    networks:
+      - local
+  mongodb:
+    image: mongo:4.2
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: "admin"
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "root"
+    volumes:
+      - type: bind
+        source: ./mongodb/docker-entrypoint-initdb.d
+        target: /docker-entrypoint-initdb.d
+      - type: volume
+        source: mongodb
+        target: /data
+    networks:
+      - local
+  api:
+    build: ./api
+    image: designbot-api:latest
+    ports:
+      - 1337:1337
+      - 9337:9337
+    environment:
+      PORT: 1337
+      DEBUG_PORT: 9337
+      WAIT_HOSTS: rabbitmq:5672,mongodb:27017,redis:6379
+    env_file:
+      - ./api/.env
+      - ~/.aws/env_designbot.sh
+    volumes:
+      - type: bind
+        source: ./api/api
+        target: /var/app/current/api
+      - type: bind
+        source: ./api/config
+        target: /var/app/current/config
+      - type: bind
+        source: ./api/test
+        target: /var/app/current/test
+    networks:
+      - local
+    depends_on:
+      - "rabbitmq"
+      - "mongodb"
+      - "redis"
+  web:
+    build: ./web
+    image: designbot-web:latest
+    ports:
+      - 3000:3000
+    environment:
+      REACT_APP_API_URL: http://api.designbot.local
+    volumes:
+      - type: bind
+        source: ./web/src
+        target: /var/app/current/src
+      - type: bind
+        source: ./web/public
+        target: /var/app/current/public
+    networks:
+      - local
+    depends_on:
+      - "api"
+  nginx:
+    build: nginx
+    image: nginx-wait:latest
+    restart: on-failure
+    environment:
+      WAIT_HOSTS: api:1337,web:3000
+    volumes:
+      - type: bind
+        source: ./nginx/conf.d
+        target: /etc/nginx/conf.d
+      - type: bind
+        source: ./nginx/log
+        target: /var/log/nginx
+    ports:
+      - 80:80
+    networks:
+      - local
+    depends_on:
+      - "api"
+      - "web"
+networks:
+  local:
+    driver: overlay
+
+volumes:
+  rabbitmq:
+  redis:
+  mongodb:
